@@ -1,4 +1,5 @@
-"""CLI for the lab."""
+# ruff: noqa: E501
+"""CLI runner and evaluation commands."""
 
 from __future__ import annotations
 

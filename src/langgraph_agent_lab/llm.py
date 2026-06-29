@@ -1,3 +1,4 @@
+# ruff: noqa: ANN201
 """LLM factory helper.
 
 Provides a simple interface to create LLM clients for use in nodes.
@@ -15,15 +16,13 @@ import os
 
 
 def get_llm(model: str | None = None, temperature: float = 0.0):
-    """Create an LLM client from environment configuration.
+    """Create an LLM client from environment configuration."""
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
 
-    Checks for API keys in this order:
-    1. GEMINI_API_KEY → ChatGoogleGenerativeAI
-    2. OPENAI_API_KEY → ChatOpenAI
-    3. ANTHROPIC_API_KEY → ChatAnthropic
-
-    Override model with the `model` parameter or LLM_MODEL env var.
-    """
     if os.getenv("GEMINI_API_KEY"):
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
@@ -40,10 +39,14 @@ def get_llm(model: str | None = None, temperature: float = 0.0):
             from langchain_openai import ChatOpenAI
         except ImportError as exc:
             raise RuntimeError("Install: pip install langchain-openai") from exc
-        return ChatOpenAI(
-            model=model or os.getenv("LLM_MODEL", "gpt-4o-mini"),
-            temperature=temperature,
-        )
+        base_url = os.getenv("OPENAI_API_BASE") or os.getenv("OPENAI_BASE_URL")
+        kwargs = {
+            "model": model or os.getenv("LLM_MODEL", "gpt-4o-mini"),
+            "temperature": temperature,
+        }
+        if base_url:
+            kwargs["base_url"] = base_url
+        return ChatOpenAI(**kwargs)
 
     if os.getenv("ANTHROPIC_API_KEY"):
         try:
